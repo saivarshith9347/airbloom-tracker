@@ -22,16 +22,13 @@ export function LiveMap({ readings, latest }: LiveMapProps) {
   const markerRef = useRef<L.Marker | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
   const prevPosRef = useRef<[number, number] | null>(null);
-
-  if (!latest) return null;
-
-  const position: [number, number] = [latest.latitude, latest.longitude];
+  const position: [number, number] = latest ? [latest.latitude, latest.longitude] : [0, 0];
   const path: [number, number][] = readings
     .filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude))
     .map((r) => [r.latitude, r.longitude]);
 
   useEffect(() => {
-    if (!mapElementRef.current || mapRef.current) return;
+    if (!latest || !mapElementRef.current || mapRef.current) return;
 
     const map = L.map(mapElementRef.current, {
       center: position,
@@ -63,10 +60,10 @@ export function LiveMap({ readings, latest }: LiveMapProps) {
       polylineRef.current = null;
       prevPosRef.current = null;
     };
-  }, []);
+  }, [latest, path, position]);
 
   useEffect(() => {
-    if (!mapRef.current || !markerRef.current || !polylineRef.current) return;
+    if (!latest || !mapRef.current || !markerRef.current || !polylineRef.current) return;
 
     markerRef.current.setLatLng(position);
     polylineRef.current.setLatLngs(path);
@@ -80,6 +77,8 @@ export function LiveMap({ readings, latest }: LiveMapProps) {
       prevPosRef.current = position;
     }
   }, [path, position]);
+
+  if (!latest) return null;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden animate-slide-in">
