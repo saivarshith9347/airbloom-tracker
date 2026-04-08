@@ -4,38 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Layers, MapPin, Activity, Clock, ChevronRight } from "lucide-react";
-import { DeviceInfo } from "@/lib/thingspeak";
-
-// Extended mock devices with more details
-const DEVICES: (DeviceInfo & { location: string; lastAqi: number; status: string })[] = [
-  {
-    id: "esp32-001",
-    name: "ESP32 Unit Alpha",
-    online: true,
-    lastUpdated: new Date().toISOString(),
-    location: "New Delhi, India",
-    lastAqi: 85,
-    status: "Active",
-  },
-  {
-    id: "esp32-002",
-    name: "ESP32 Unit Beta",
-    online: false,
-    lastUpdated: new Date(Date.now() - 3600000).toISOString(),
-    location: "Mumbai, India",
-    lastAqi: 120,
-    status: "Offline",
-  },
-  {
-    id: "esp32-003",
-    name: "ESP32 Unit Gamma",
-    online: true,
-    lastUpdated: new Date(Date.now() - 300000).toISOString(),
-    location: "Bangalore, India",
-    lastAqi: 65,
-    status: "Active",
-  },
-];
+import { MOCK_DEVICES as DEVICES, DeviceInfo } from "@/lib/thingspeak";
 
 export default function Devices() {
   const navigate = useNavigate();
@@ -47,10 +16,10 @@ export default function Devices() {
     navigate(`/?device=${deviceId}`);
   };
 
-  const getAqiColor = (aqi: number) => {
-    if (aqi <= 50) return "success";
-    if (aqi <= 100) return "warning";
-    return "danger";
+  const getAqiColor = (aqi: number): "default" | "secondary" | "destructive" | "outline" => {
+    if (aqi <= 50) return "default";
+    if (aqi <= 100) return "secondary";
+    return "destructive";
   };
 
   return (
@@ -147,7 +116,7 @@ export default function Devices() {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Last AQI</span>
-                  <Badge variant={getAqiColor(device.lastAqi) as any}>
+                  <Badge variant={getAqiColor(device.lastAqi)}>
                     {device.lastAqi}
                   </Badge>
                 </div>

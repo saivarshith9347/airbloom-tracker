@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wind, LayoutDashboard, Layers, History, Menu, X, Sun, Moon, LogOut, User } from "lucide-react";
+import { Wind, LayoutDashboard, Layers, History, Menu, X, Sun, Moon, LogOut, User, WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -30,6 +31,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const isOnline = useOnlineStatus();
 
   const handleLogout = () => {
     logout();
@@ -124,6 +126,14 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </header>
+
+      {/* Offline Status Banner */}
+      {!isOnline && (
+        <div className="w-full bg-destructive/90 text-destructive-foreground text-xs font-medium flex items-center justify-center gap-2 py-2 px-4 z-40">
+          <WifiOff className="h-3.5 w-3.5" />
+          You are offline. Showing last cached data.
+        </div>
+      )}
 
       {/* Mobile Sidebar */}
       {sidebarOpen && (

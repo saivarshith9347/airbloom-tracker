@@ -7,6 +7,7 @@ import { Map, Satellite, Navigation, Home, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Fix default marker icons
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -46,7 +47,7 @@ export function EnhancedMap({ readings, latest, homeLocation }: EnhancedMapProps
     : [28.6139, 77.209]; // Default home
 
   // Map tile configurations
-  const tileConfigs = {
+  const tileConfigs: Record<MapStyle, { url: string; attribution: string }> = {
     standard: {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

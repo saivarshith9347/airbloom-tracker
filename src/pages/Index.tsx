@@ -117,7 +117,7 @@ const Index = () => {
           <TimeFilter value={filterHours} onChange={setFilterHours} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <SensorChart
             data={readings}
             dataKey="temperature"
@@ -132,12 +132,23 @@ const Index = () => {
             color="hsl(160, 84%, 39%)"
             unit=""
           />
+          <SensorChart
+            data={readings}
+            dataKey="humidity"
+            title="Humidity vs Time"
+            color="hsl(270, 70%, 60%)"
+            unit="%"
+          />
         </div>
 
         <EnhancedMap
           readings={readings}
           latest={latest}
-          homeLocation={{ lat: 28.6139, lng: 77.209, name: "Home Base" }}
+          homeLocation={{
+            lat: parseFloat(import.meta.env.VITE_HOME_LATITUDE) || 28.6139,
+            lng: parseFloat(import.meta.env.VITE_HOME_LONGITUDE) || 77.209,
+            name: import.meta.env.VITE_HOME_NAME || "Home Base"
+          }}
         />
       </div>
     </div>

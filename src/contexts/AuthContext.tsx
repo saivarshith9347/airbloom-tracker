@@ -1,11 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  name: string;
-}
+import { authenticateUser, type User } from "@/lib/auth";
 
 interface AuthContextType {
   user: User | null;
@@ -16,12 +10,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock users for demo (replace with real API)
-const MOCK_USERS = [
-  { id: "1", username: "admin", password: "admin123", email: "admin@airbloom.io", name: "Admin User" },
-  { id: "2", username: "demo", password: "demo123", email: "demo@airbloom.io", name: "Demo User" },
-];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -41,15 +29,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Simulate API call
+    // Simulate API call delay
     await new Promise((resolve) => setTimeout(resolve, 800));
     
-    const foundUser = MOCK_USERS.find(
-      (u) => (u.username === username || u.email === username) && u.password === password
-    );
+    // Let errors (like rate limit errors) propagate to the caller
+    const userData = await authenticateUser(username, password);
 
-    if (foundUser) {
-      const userData = { id: foundUser.id, username: foundUser.username, email: foundUser.email, name: foundUser.name };
+    if (userData) {
       setUser(userData);
       localStorage.setItem("airbloom-user", JSON.stringify(userData));
       return true;

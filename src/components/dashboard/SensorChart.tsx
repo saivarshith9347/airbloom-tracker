@@ -1,6 +1,5 @@
+import { useMemo } from "react";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,17 +12,21 @@ import { SensorReading } from "@/lib/thingspeak";
 
 interface SensorChartProps {
   data: SensorReading[];
-  dataKey: "temperature" | "aqi";
+  dataKey: "temperature" | "aqi" | "humidity";
   title: string;
   color: string;
   unit: string;
 }
 
 export function SensorChart({ data, dataKey, title, color, unit }: SensorChartProps) {
-  const chartData = data.map((r) => ({
-    time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    [dataKey]: Math.round(r[dataKey] * 10) / 10,
-  }));
+  const chartData = useMemo(
+    () =>
+      data.map((r) => ({
+        time: new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        [dataKey]: Math.round(r[dataKey] * 10) / 10,
+      })),
+    [data, dataKey]
+  );
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 animate-slide-in">

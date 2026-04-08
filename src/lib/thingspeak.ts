@@ -14,6 +14,9 @@ export interface DeviceInfo {
   name: string;
   online: boolean;
   lastUpdated: string;
+  location: string;
+  lastAqi: number;
+  status: string;
 }
 
 // Generate realistic mock data
@@ -63,30 +66,51 @@ export function getMockHistory(hours: number): SensorReading[] {
   return cachedMockData.filter(r => new Date(r.timestamp).getTime() >= cutoff);
 }
 
-export function getAqiLevel(aqi: number): { label: string; color: "success" | "warning" | "danger"; description: string } {
-  if (aqi <= 50) return { label: "Good", color: "success", description: "Air quality is satisfactory" };
-  if (aqi <= 100) return { label: "Moderate", color: "warning", description: "Acceptable quality" };
-  return { label: "Unhealthy", color: "danger", description: "Health risk detected" };
+export type AqiColor = "success" | "warning" | "danger" | "default";
+
+export interface AqiLevel {
+  label: string;
+  color: AqiColor;
+  description: string;
+  band: 1 | 2 | 3 | 4 | 5 | 6;
+}
+
+export function getAqiLevel(aqi: number): AqiLevel {
+  if (aqi <= 50)  return { label: "Good",                    color: "success",  description: "Air quality is satisfactory and poses little or no risk.",          band: 1 };
+  if (aqi <= 100) return { label: "Moderate",               color: "warning",  description: "Acceptable quality; some pollutants may affect very sensitive people.", band: 2 };
+  if (aqi <= 150) return { label: "Unhealthy for Sensitive", color: "warning",  description: "Sensitive groups may experience health effects.",                    band: 3 };
+  if (aqi <= 200) return { label: "Unhealthy",              color: "danger",   description: "Everyone may begin to experience health effects.",                   band: 4 };
+  if (aqi <= 300) return { label: "Very Unhealthy",         color: "danger",   description: "Health alert: everyone may experience serious health effects.",      band: 5 };
+  return              { label: "Hazardous",                  color: "danger",   description: "Health warning of emergency conditions.",                            band: 6 };
 }
 
 export const MOCK_DEVICES: DeviceInfo[] = [
-  { id: "esp32-001", name: "ESP32 Unit Alpha", online: true, lastUpdated: new Date().toISOString() },
-  { id: "esp32-002", name: "ESP32 Unit Beta", online: false, lastUpdated: new Date(Date.now() - 3600000).toISOString() },
-  { id: "esp32-003", name: "ESP32 Unit Gamma", online: true, lastUpdated: new Date(Date.now() - 300000).toISOString() },
+  { id: "esp32-001", name: "ESP32 Unit Alpha", online: true, lastUpdated: new Date().toISOString(), location: "New Delhi, India", lastAqi: 85, status: "Active" },
+  { id: "esp32-002", name: "ESP32 Unit Beta", online: false, lastUpdated: new Date(Date.now() - 3600000).toISOString(), location: "Mumbai, India", lastAqi: 120, status: "Offline" },
+  { id: "esp32-003", name: "ESP32 Unit Gamma", online: true, lastUpdated: new Date(Date.now() - 300000).toISOString(), location: "Bangalore, India", lastAqi: 65, status: "Active" },
 ];
 
 // ThingSpeak fetch (replace CHANNEL_ID and API_KEY with real values)
 export async function fetchThingSpeakData(results = 100): Promise<SensorReading[] | null> {
-  const CHANNEL_ID = "";
-  const API_KEY = "";
+  const CHANNEL_ID = import.meta.env.VITE_THINGSPEAK_CHANNEL_ID ?? "";
+  const API_KEY = import.meta.env.VITE_THINGSPEAK_API_KEY ?? "";
   if (!CHANNEL_ID || !API_KEY) return null; // Use mock data
+
+  interface ThingSpeakFeed {
+    created_at: string;
+    field1: string;
+    field2: string;
+    field3: string;
+    field4: string;
+    field5: string;
+  }
 
   try {
     const res = await fetch(
       `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${API_KEY}&results=${results}`
     );
     const data = await res.json();
-    return data.feeds.map((f: any) => ({
+    return data.feeds.map((f: ThingSpeakFeed) => ({
       timestamp: f.created_at,
       temperature: parseFloat(f.field1) || 0,
       humidity: parseFloat(f.field2) || 0,

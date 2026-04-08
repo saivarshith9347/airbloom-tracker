@@ -13,7 +13,15 @@ import Devices from "./pages/Devices.tsx";
 import History from "./pages/History.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 10_000,
+      refetchInterval: 15_000,
+      retry: 2,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,27 +11,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Wind, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+const loginSchema = z.object({
+  username: z.string().min(1, "Username is required").max(100),
+  password: z.string().min(6, "Password must be at least 6 characters").max(128),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
     setError("");
     setIsLoading(true);
 
-    const success = await login(username, password);
-    
-    if (success) {
-      navigate("/");
-    } else {
-      setError("Invalid username or password");
+    try {
+      const success = await login(data.username, data.password);
+      
+      if (success) {
+        navigate("/");
+      } else {
+        setError("Invalid username or password");
+      }
+    } catch (err) {
+      // Handle rate limit errors
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An error occurred during login");
+      }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -50,7 +75,7 @@ export default function Login() {
             <CardDescription>Enter your credentials to access your dashboard</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {error && (
                 <Alert variant="destructive" className="animate-slide-in">
                   <AlertCircle className="h-4 w-4" />
@@ -64,12 +89,13 @@ export default function Login() {
                   id="username"
                   type="text"
                   placeholder="admin or admin@airbloom.io"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
+                  {...register("username")}
                   disabled={isLoading}
                   className="transition-all"
                 />
+                {errors.username && (
+                  <p className="text-sm text-destructive">{errors.username.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -78,12 +104,13 @@ export default function Login() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  {...register("password")}
                   disabled={isLoading}
                   className="transition-all"
                 />
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
@@ -97,15 +124,6 @@ export default function Login() {
                 )}
               </Button>
             </form>
-
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/50">
-              <p className="text-xs font-medium text-muted-foreground mb-2">Demo Credentials:</p>
-              <div className="space-y-1 text-xs font-mono">
-                <p className="text-foreground">Username: <span className="text-primary">admin</span> / Password: <span className="text-primary">admin123</span></p>
-                <p className="text-foreground">Username: <span className="text-primary">demo</span> / Password: <span className="text-primary">demo123</span></p>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
