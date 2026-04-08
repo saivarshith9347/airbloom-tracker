@@ -72,6 +72,7 @@ export function getAqiLevel(aqi: number): { label: string; color: "success" | "w
 export const MOCK_DEVICES: DeviceInfo[] = [
   { id: "esp32-001", name: "ESP32 Unit Alpha", online: true, lastUpdated: new Date().toISOString() },
   { id: "esp32-002", name: "ESP32 Unit Beta", online: false, lastUpdated: new Date(Date.now() - 3600000).toISOString() },
+  { id: "esp32-003", name: "ESP32 Unit Gamma", online: true, lastUpdated: new Date(Date.now() - 300000).toISOString() },
 ];
 
 // ThingSpeak fetch (replace CHANNEL_ID and API_KEY with real values)

@@ -1,32 +1,86 @@
-import { Thermometer, Droplets, Wind } from "lucide-react";
+import { Thermometer, Droplets, Wind, Activity } from "lucide-react";
 import { useAirMonitor } from "@/hooks/useAirMonitor";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { SensorCard } from "@/components/dashboard/SensorCard";
 import { AqiGauge } from "@/components/dashboard/AqiGauge";
 import { SensorChart } from "@/components/dashboard/SensorChart";
-import { LiveMap } from "@/components/dashboard/LiveMap";
+import { EnhancedMap } from "@/components/dashboard/EnhancedMap";
 import { AlertBanner } from "@/components/dashboard/AlertBanner";
-import { HistoryTable } from "@/components/dashboard/HistoryTable";
 import { TimeFilter } from "@/components/dashboard/TimeFilter";
 import { getAqiLevel } from "@/lib/thingspeak";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 const Index = () => {
+  const [searchParams] = useSearchParams();
+  const deviceParam = searchParams.get("device");
+
   const {
     readings, latest, devices, selectedDevice, setSelectedDevice,
     filterHours, setFilterHours, alerts, clearAlerts,
   } = useAirMonitor();
 
+  useEffect(() => {
+    if (deviceParam && devices.find((d) => d.id === deviceParam)) {
+      setSelectedDevice(deviceParam);
+    }
+  }, [deviceParam, devices, setSelectedDevice]);
+
   const aqiLevel = latest ? getAqiLevel(latest.aqi) : null;
+  const currentDevice = devices.find((d) => d.id === selectedDevice);
+
+  if (!latest) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-5">
+          <Skeleton className="h-16 w-full" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
-        <DashboardHeader
-          devices={devices}
-          selectedDevice={selectedDevice}
-          onDeviceChange={setSelectedDevice}
-          lastUpdated={latest?.timestamp ?? null}
-        />
+        {/* Device Info Header */}
+        <Card className="border-border/50 shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Activity className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{currentDevice?.name}</h2>
+                  <p className="text-sm text-muted-foreground">Device ID: {selectedDevice}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-3 w-3 rounded-full ${
+                      currentDevice?.online ? "bg-success animate-pulse-glow" : "bg-muted-foreground"
+                    }`}
+                  />
+                  <span className="text-sm font-medium">
+                    {currentDevice?.online ? "Online" : "Offline"}
+                  </span>
+                </div>
+                {latest && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {new Date(latest.timestamp).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <AlertBanner alerts={alerts} onClear={clearAlerts} />
 
@@ -34,27 +88,27 @@ const Index = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SensorCard
             title="Temperature"
-            value={latest ? latest.temperature.toFixed(1) : "--"}
+            value={latest.temperature.toFixed(1)}
             unit="°C"
             icon={<Thermometer className="h-5 w-5" />}
             variant="default"
           />
           <SensorCard
             title="Humidity"
-            value={latest ? latest.humidity.toFixed(1) : "--"}
+            value={latest.humidity.toFixed(1)}
             unit="%"
             icon={<Droplets className="h-5 w-5" />}
             variant="default"
           />
           <SensorCard
             title="Air Quality"
-            value={latest ? Math.round(latest.aqi) : "--"}
+            value={Math.round(latest.aqi).toString()}
             unit="AQI"
             icon={<Wind className="h-5 w-5" />}
             variant={aqiLevel?.color ?? "default"}
             subtitle={aqiLevel?.label}
           />
-          <AqiGauge aqi={latest?.aqi ?? 0} />
+          <AqiGauge aqi={latest.aqi} />
         </div>
 
         {/* Charts + Map */}
@@ -80,9 +134,11 @@ const Index = () => {
           />
         </div>
 
-        <LiveMap readings={readings} latest={latest} />
-
-        <HistoryTable data={readings} />
+        <EnhancedMap
+          readings={readings}
+          latest={latest}
+          homeLocation={{ lat: 28.6139, lng: 77.209, name: "Home Base" }}
+        />
       </div>
     </div>
   );
