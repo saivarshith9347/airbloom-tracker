@@ -88,7 +88,7 @@ export default function Login() {
                 <Input
                   id="username"
                   type="text"
-                  placeholder="admin or admin@airbloom.io"
+                  placeholder="Username"
                   {...register("username")}
                   disabled={isLoading}
                   className="transition-all"

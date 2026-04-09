@@ -23,6 +23,22 @@ interface EnhancedMapProps {
 
 type MapStyle = "standard" | "satellite" | "dark";
 
+// Map tile configurations
+const tileConfigs: Record<MapStyle, { url: string; attribution: string }> = {
+  standard: {
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+  },
+  dark: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://carto.com">CARTO</a>',
+  },
+};
+
 export function EnhancedMap({ readings, latest, homeLocation }: EnhancedMapProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -45,22 +61,6 @@ export function EnhancedMap({ readings, latest, homeLocation }: EnhancedMapProps
   const home: [number, number] = homeLocation
     ? [homeLocation.lat, homeLocation.lng]
     : [28.6139, 77.209]; // Default home
-
-  // Map tile configurations
-  const tileConfigs: Record<MapStyle, { url: string; attribution: string }> = {
-    standard: {
-      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    },
-    satellite: {
-      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
-    },
-    dark: {
-      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      attribution: '&copy; <a href="https://carto.com">CARTO</a>',
-    },
-  };
 
   // Initialize map
   useEffect(() => {

@@ -9,26 +9,66 @@ import { TimeFilter } from "@/components/dashboard/TimeFilter";
 import { getAqiLevel } from "@/lib/thingspeak";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const [searchParams] = useSearchParams();
-  const deviceParam = searchParams.get("device");
-
+  const navigate = useNavigate();
   const {
-    readings, latest, devices, selectedDevice, setSelectedDevice,
-    filterHours, setFilterHours, alerts, clearAlerts,
+    readings, latest, devices, selectedDevice, activeDevice,
+    filterHours, setFilterHours, alerts, clearAlerts, isLoading,
   } = useAirMonitor();
-
-  useEffect(() => {
-    if (deviceParam && devices.find((d) => d.id === deviceParam)) {
-      setSelectedDevice(deviceParam);
-    }
-  }, [deviceParam, devices, setSelectedDevice]);
 
   const aqiLevel = latest ? getAqiLevel(latest.aqi) : null;
   const currentDevice = devices.find((d) => d.id === selectedDevice);
+
+  // No device configured
+  if (!activeDevice) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <Wind className="h-16 w-16 mx-auto text-muted-foreground opacity-40" />
+          <h2 className="text-xl font-semibold">No device connected</h2>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Add a ThingSpeak device in the Devices page to start monitoring air quality data.
+          </p>
+          <Button onClick={() => navigate("/devices")} className="mt-4">
+            Go to Devices
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-5">
+          <Skeleton className="h-16 w-full" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (latest === null && !isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-3">
+          <Wind className="h-12 w-12 mx-auto text-muted-foreground opacity-40" />
+          <h2 className="text-lg font-semibold">No sensor data</h2>
+          <p className="text-sm text-muted-foreground">No data received from ThingSpeak. Check your API configuration.</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ensure VITE_THINGSPEAK_CHANNEL_ID and VITE_THINGSPEAK_API_KEY are set in .env
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!latest) {
     return (
@@ -57,20 +97,14 @@ const Index = () => {
                   <Activity className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{currentDevice?.name}</h2>
-                  <p className="text-sm text-muted-foreground">Device ID: {selectedDevice}</p>
+                  <h2 className="text-xl font-bold">{activeDevice.name}</h2>
+                  <p className="text-sm text-muted-foreground">Channel: {activeDevice.channelId}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`h-3 w-3 rounded-full ${
-                      currentDevice?.online ? "bg-success animate-pulse-glow" : "bg-muted-foreground"
-                    }`}
-                  />
-                  <span className="text-sm font-medium">
-                    {currentDevice?.online ? "Online" : "Offline"}
-                  </span>
+                  <span className="h-3 w-3 rounded-full bg-success animate-pulse-glow" />
+                  <span className="text-sm font-medium">Online</span>
                 </div>
                 {latest && (
                   <span className="text-xs text-muted-foreground font-mono">

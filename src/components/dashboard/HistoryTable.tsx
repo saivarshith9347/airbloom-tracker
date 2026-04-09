@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { SensorReading, getAqiLevel } from "@/lib/thingspeak";
+import { SensorReading, getAqiLevel, exportReadingsToCsv } from "@/lib/thingspeak";
 import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
 
@@ -13,23 +13,6 @@ const colorMap = {
   warning: "text-warning",
   danger: "text-danger",
 };
-
-function exportCsv(data: SensorReading[]) {
-  const header = "Timestamp,Temperature(°C),Humidity(%),AQI,Latitude,Longitude\n";
-  const rows = data
-    .map(
-      (r) =>
-        `${r.timestamp},${r.temperature.toFixed(1)},${r.humidity.toFixed(1)},${Math.round(r.aqi)},${r.latitude.toFixed(5)},${r.longitude.toFixed(5)}`
-    )
-    .join("\n");
-  const blob = new Blob([header + rows], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `air-monitor-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 export function HistoryTable({ data, pageSize: propsPageSize }: HistoryTableProps) {
   const [page, setPage] = useState(0);
@@ -50,7 +33,7 @@ export function HistoryTable({ data, pageSize: propsPageSize }: HistoryTableProp
       <div className="flex items-center justify-between p-4">
         <h3 className="text-sm font-medium text-muted-foreground">History & Logs</h3>
         <button
-          onClick={() => exportCsv(data)}
+          onClick={() => exportReadingsToCsv(data)}
           className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
         >
           <Download className="h-3.5 w-3.5" />

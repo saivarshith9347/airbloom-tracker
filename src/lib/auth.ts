@@ -8,7 +8,35 @@ export interface User {
 }
 
 // Rate limiting for brute-force protection
-const loginAttempts = new Map<string, { attempts: number; lockedUntil: number }>();
+const RATE_LIMIT_KEY = "airbloom-rate";
+
+interface AttemptRecord {
+  attempts: number;
+  lockedUntil: number;
+}
+
+function getAttemptRecord(username: string): AttemptRecord {
+  try {
+    const raw = sessionStorage.getItem(`${RATE_LIMIT_KEY}:${username}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { attempts: 0, lockedUntil: 0 };
+}
+
+function saveAttemptRecord(username: string, record: AttemptRecord): void {
+  try {
+    sessionStorage.setItem(`${RATE_LIMIT_KEY}:${username}`, JSON.stringify(record));
+  } catch {}
+}
+
+function recordFailedAttempt(username: string): void {
+  const record = getAttemptRecord(username);
+  record.attempts += 1;
+  if (record.attempts >= 5) {
+    record.lockedUntil = Date.now() + 15 * 60 * 1000;
+  }
+  saveAttemptRecord(username, record);
+}
 
 /**
  * Hash a password using SHA-256
@@ -29,7 +57,7 @@ async function hashPassword(password: string): Promise<string> {
  */
 export async function authenticateUser(username: string, password: string): Promise<User | null> {
   // Check rate limiting
-  const attemptRecord = loginAttempts.get(username);
+  const attemptRecord = getAttemptRecord(username);
   if (attemptRecord && attemptRecord.lockedUntil > Date.now()) {
     const minutesRemaining = Math.ceil((attemptRecord.lockedUntil - Date.now()) / (60 * 1000));
     throw new Error(`Too many failed attempts. Try again in ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}.`);
@@ -44,7 +72,10 @@ export async function authenticateUser(username: string, password: string): Prom
   }
 
   // Check if username matches (allow email format too)
-  const usernameMatches = username === adminUsername || username === `${adminUsername}@airbloom.io`;
+  const usernameMatches = 
+    username === adminUsername || 
+    username === `${adminUsername}@airbloom.io` ||
+    username === `${adminUsername}@mlrit.ac.in`;
   
   if (!usernameMatches) {
     // Record failed attempt
@@ -57,11 +88,11 @@ export async function authenticateUser(username: string, password: string): Prom
   
   if (passwordHash === adminPasswordHash) {
     // Successful login - clear attempts
-    loginAttempts.delete(username);
+    saveAttemptRecord(username, { attempts: 0, lockedUntil: 0 });
     return {
       id: "1",
       username: adminUsername,
-      email: `${adminUsername}@airbloom.io`,
+      email: `${adminUsername}@mlrit.ac.in`,
       name: "Admin User"
     };
   }
@@ -69,18 +100,4 @@ export async function authenticateUser(username: string, password: string): Prom
   // Record failed attempt
   recordFailedAttempt(username);
   return null;
-}
-
-/**
- * Record a failed login attempt and apply lockout if threshold exceeded
- */
-function recordFailedAttempt(username: string): void {
-  const record = loginAttempts.get(username) || { attempts: 0, lockedUntil: 0 };
-  record.attempts += 1;
-
-  if (record.attempts >= 5) {
-    record.lockedUntil = Date.now() + 15 * 60 * 1000; // 15-minute lockout
-  }
-
-  loginAttempts.set(username, record);
 }

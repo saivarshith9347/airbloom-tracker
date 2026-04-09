@@ -20,8 +20,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem("airbloom-user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
+        const parsed = JSON.parse(storedUser);
+        if (parsed.expiresAt && parsed.expiresAt > Date.now()) {
+          const { expiresAt: _exp, ...user } = parsed;
+          setUser(user);
+        } else {
+          localStorage.removeItem("airbloom-user");
+        }
+      } catch {
         localStorage.removeItem("airbloom-user");
       }
     }
@@ -37,7 +43,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (userData) {
       setUser(userData);
-      localStorage.setItem("airbloom-user", JSON.stringify(userData));
+      localStorage.setItem("airbloom-user", JSON.stringify({
+        ...userData,
+        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+      }));
       return true;
     }
     return false;

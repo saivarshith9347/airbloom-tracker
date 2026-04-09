@@ -1,4 +1,4 @@
-// ThingSpeak API integration with mock data fallback
+// ThingSpeak API integration
 
 export interface SensorReading {
   timestamp: string;
@@ -19,51 +19,13 @@ export interface DeviceInfo {
   status: string;
 }
 
-// Generate realistic mock data
-function generateMockData(count: number): SensorReading[] {
-  const now = Date.now();
-  const readings: SensorReading[] = [];
-  // Simulate a walk in a city
-  let lat = 28.6139;
-  let lng = 77.209;
-
-  for (let i = count - 1; i >= 0; i--) {
-    const t = now - i * 15000; // 15s intervals
-    lat += (Math.random() - 0.48) * 0.0005;
-    lng += (Math.random() - 0.48) * 0.0005;
-    readings.push({
-      timestamp: new Date(t).toISOString(),
-      temperature: 22 + Math.sin(i / 10) * 5 + (Math.random() - 0.5) * 2,
-      humidity: 55 + Math.cos(i / 8) * 15 + (Math.random() - 0.5) * 5,
-      aqi: Math.max(10, 80 + Math.sin(i / 6) * 60 + (Math.random() - 0.5) * 30),
-      latitude: lat,
-      longitude: lng,
-    });
-  }
-  return readings;
-}
-
-let cachedMockData = generateMockData(240);
-
-export function getLatestMockReading(): SensorReading {
-  const now = new Date();
-  const last = cachedMockData[cachedMockData.length - 1];
-  const newReading: SensorReading = {
-    timestamp: now.toISOString(),
-    temperature: last.temperature + (Math.random() - 0.5) * 1.5,
-    humidity: Math.max(20, Math.min(95, last.humidity + (Math.random() - 0.5) * 3)),
-    aqi: Math.max(10, Math.min(300, last.aqi + (Math.random() - 0.5) * 15)),
-    latitude: last.latitude + (Math.random() - 0.48) * 0.0003,
-    longitude: last.longitude + (Math.random() - 0.48) * 0.0003,
-  };
-  cachedMockData.push(newReading);
-  if (cachedMockData.length > 500) cachedMockData = cachedMockData.slice(-400);
-  return newReading;
-}
-
-export function getMockHistory(hours: number): SensorReading[] {
-  const cutoff = Date.now() - hours * 3600000;
-  return cachedMockData.filter(r => new Date(r.timestamp).getTime() >= cutoff);
+interface ThingSpeakFeed {
+  created_at: string;
+  field1: string;
+  field2: string;
+  field3: string;
+  field4: string;
+  field5: string;
 }
 
 export type AqiColor = "success" | "warning" | "danger" | "default";
@@ -84,32 +46,34 @@ export function getAqiLevel(aqi: number): AqiLevel {
   return              { label: "Hazardous",                  color: "danger",   description: "Health warning of emergency conditions.",                            band: 6 };
 }
 
-export const MOCK_DEVICES: DeviceInfo[] = [
-  { id: "esp32-001", name: "ESP32 Unit Alpha", online: true, lastUpdated: new Date().toISOString(), location: "New Delhi, India", lastAqi: 85, status: "Active" },
-  { id: "esp32-002", name: "ESP32 Unit Beta", online: false, lastUpdated: new Date(Date.now() - 3600000).toISOString(), location: "Mumbai, India", lastAqi: 120, status: "Offline" },
-  { id: "esp32-003", name: "ESP32 Unit Gamma", online: true, lastUpdated: new Date(Date.now() - 300000).toISOString(), location: "Bangalore, India", lastAqi: 65, status: "Active" },
-];
-
-// ThingSpeak fetch (replace CHANNEL_ID and API_KEY with real values)
-export async function fetchThingSpeakData(results = 100): Promise<SensorReading[] | null> {
-  const CHANNEL_ID = import.meta.env.VITE_THINGSPEAK_CHANNEL_ID ?? "";
-  const API_KEY = import.meta.env.VITE_THINGSPEAK_API_KEY ?? "";
-  if (!CHANNEL_ID || !API_KEY) return null; // Use mock data
-
-  interface ThingSpeakFeed {
-    created_at: string;
-    field1: string;
-    field2: string;
-    field3: string;
-    field4: string;
-    field5: string;
+// ThingSpeak fetch with device-specific credentials
+export async function fetchThingSpeakData(
+  results: number,
+  channelId: string,
+  apiKey: string
+): Promise<SensorReading[] | null> {
+  if (!channelId || !apiKey) {
+    console.warn("ThingSpeak credentials not provided");
+    return null;
   }
 
   try {
     const res = await fetch(
-      `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${API_KEY}&results=${results}`
+      `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=${results}`
     );
+    
+    if (!res.ok) {
+      console.error("ThingSpeak API error:", res.status, res.statusText);
+      return null;
+    }
+    
     const data = await res.json();
+    
+    if (!data.feeds || !Array.isArray(data.feeds)) {
+      console.error("Invalid ThingSpeak response format:", data);
+      return null;
+    }
+    
     return data.feeds.map((f: ThingSpeakFeed) => ({
       timestamp: f.created_at,
       temperature: parseFloat(f.field1) || 0,
@@ -118,7 +82,71 @@ export async function fetchThingSpeakData(results = 100): Promise<SensorReading[
       latitude: parseFloat(f.field4) || 0,
       longitude: parseFloat(f.field5) || 0,
     }));
-  } catch {
+  } catch (error) {
+    console.error("ThingSpeak fetch error:", error);
     return null;
   }
+}
+
+export async function fetchThingSpeakHistory(
+  hours: number,
+  channelId: string,
+  apiKey: string
+): Promise<SensorReading[] | null> {
+  if (!channelId || !apiKey) {
+    console.warn("ThingSpeak credentials not provided");
+    return null;
+  }
+
+  const results = Math.min(8000, hours * 240); // max 8000 from ThingSpeak
+  
+  try {
+    const res = await fetch(
+      `https://api.thingspeak.com/channels/${channelId}/feeds.json?api_key=${apiKey}&results=${results}`
+    );
+    
+    if (!res.ok) {
+      console.error("ThingSpeak API error:", res.status, res.statusText);
+      return null;
+    }
+    
+    const data = await res.json();
+    
+    if (!data.feeds || !Array.isArray(data.feeds)) {
+      console.error("Invalid ThingSpeak response format:", data);
+      return null;
+    }
+    
+    const cutoff = Date.now() - hours * 3600000;
+    return data.feeds
+      .map((f: ThingSpeakFeed) => ({
+        timestamp: f.created_at,
+        temperature: parseFloat(f.field1) || 0,
+        humidity: parseFloat(f.field2) || 0,
+        aqi: parseFloat(f.field3) || 0,
+        latitude: parseFloat(f.field4) || 0,
+        longitude: parseFloat(f.field5) || 0,
+      }))
+      .filter((r: SensorReading) => new Date(r.timestamp).getTime() >= cutoff);
+  } catch (error) {
+    console.error("ThingSpeak history fetch error:", error);
+    return null;
+  }
+}
+
+export function exportReadingsToCsv(readings: SensorReading[], filename?: string): void {
+  const header = "Timestamp,Temperature (°C),Humidity (%),AQI,Latitude,Longitude\n";
+  const rows = readings
+    .map(
+      (r) =>
+        `${r.timestamp},${r.temperature.toFixed(2)},${r.humidity.toFixed(2)},${r.aqi.toFixed(2)},${r.latitude.toFixed(5)},${r.longitude.toFixed(5)}`
+    )
+    .join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename ?? `airbloom-data-${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

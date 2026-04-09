@@ -1,36 +1,16 @@
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { History as HistoryIcon, Download, Filter, Calendar } from "lucide-react";
 import { HistoryTable } from "@/components/dashboard/HistoryTable";
 import { useAirMonitor } from "@/hooks/useAirMonitor";
 import { TimeFilter } from "@/components/dashboard/TimeFilter";
+import { exportReadingsToCsv } from "@/lib/thingspeak";
 
 export default function History() {
-  const { readings, filterHours, setFilterHours } = useAirMonitor();
-  const [exportLoading, setExportLoading] = useState(false);
+  const { readings, filterHours, setFilterHours } = useAirMonitor({ enableLivePolling: false });
 
   const handleExport = () => {
-    setExportLoading(true);
-    // Simulate export
-    setTimeout(() => {
-      const csv = [
-        "Timestamp,Temperature (°C),Humidity (%),AQI,Latitude,Longitude",
-        ...readings.map(
-          (r) =>
-            `${r.timestamp},${r.temperature.toFixed(2)},${r.humidity.toFixed(2)},${r.aqi.toFixed(2)},${r.latitude},${r.longitude}`
-        ),
-      ].join("\n");
-
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `airbloom-data-${new Date().toISOString().split("T")[0]}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setExportLoading(false);
-    }, 1000);
+    exportReadingsToCsv(readings);
   };
 
   return (
@@ -46,9 +26,9 @@ export default function History() {
             <p className="text-muted-foreground">View and export historical sensor data</p>
           </div>
         </div>
-        <Button onClick={handleExport} disabled={exportLoading} className="gap-2">
+        <Button onClick={handleExport} className="gap-2">
           <Download className="h-4 w-4" />
-          {exportLoading ? "Exporting..." : "Export CSV"}
+          Export CSV
         </Button>
       </div>
 

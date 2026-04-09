@@ -40,7 +40,7 @@ export function SensorChart({ data, dataKey, title, color, unit }: SensorChartPr
                 <stop offset="95%" stopColor={color} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 14% 18%)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis
               dataKey="time"
               stroke="hsl(215 12% 40%)"
