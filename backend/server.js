@@ -9,6 +9,7 @@ const cors = require('cors');
 
 // Import routes
 const dataRoutes = require('./routes/dataRoutes');
+const deviceRoutes = require('./routes/deviceRoutes');
 
 // Initialize Express app
 const app = express();
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 
 // API Routes
 app.use('/api/data', dataRoutes);
+app.use('/api/devices', deviceRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -44,7 +46,11 @@ app.get('/', (req, res) => {
       health: '/api/data/health',
       latest: '/api/data/latest',
       history: '/api/data/history?count=20',
-      channelInfo: '/api/data/channel-info'
+      channelInfo: '/api/data/channel-info',
+      devices: '/api/devices',
+      addDevice: 'POST /api/devices',
+      deleteDevice: 'DELETE /api/devices/:id',
+      toggleDevice: 'PATCH /api/devices/:id/toggle'
     }
   });
 });
