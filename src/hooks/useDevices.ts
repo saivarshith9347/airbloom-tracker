@@ -37,5 +37,67 @@ export function useDevices() {
     save(devices.map((d) => (d.id === device.id ? device : d)));
   };
 
-  return { devices, addDevice, removeDevice, updateDevice };
+  /**
+   * Toggle device active state
+   * Supports multiple active devices simultaneously
+   * @param id - Device ID to toggle
+   */
+  const toggleDeviceActive = (id: string) => {
+    const updatedDevices = devices.map((d) => {
+      if (d.id === id) {
+        return { ...d, isActive: !d.isActive };
+      }
+      return d;
+    });
+    save(updatedDevices);
+  };
+
+  /**
+   * Activate a specific device
+   * Does NOT deactivate other devices (multi-device support)
+   * @param id - Device ID to activate
+   */
+  const activateDevice = (id: string) => {
+    const updatedDevices = devices.map((d) => {
+      if (d.id === id) {
+        return { ...d, isActive: true };
+      }
+      return d;
+    });
+    save(updatedDevices);
+  };
+
+  /**
+   * Deactivate a specific device
+   * Does NOT affect other devices
+   * @param id - Device ID to deactivate
+   */
+  const deactivateDevice = (id: string) => {
+    const updatedDevices = devices.map((d) => {
+      if (d.id === id) {
+        return { ...d, isActive: false };
+      }
+      return d;
+    });
+    save(updatedDevices);
+  };
+
+  /**
+   * Get all active devices
+   * @returns Array of active devices
+   */
+  const getActiveDevices = (): DeviceConfig[] => {
+    return devices.filter((d) => d.isActive);
+  };
+
+  return {
+    devices,
+    addDevice,
+    removeDevice,
+    updateDevice,
+    toggleDeviceActive,
+    activateDevice,
+    deactivateDevice,
+    getActiveDevices,
+  };
 }

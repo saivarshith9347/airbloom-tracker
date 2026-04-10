@@ -15,26 +15,33 @@ import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
   const {
-    readings, latest, devices, selectedDevice, activeDevice,
+    readings, latest, devices, selectedDevice, activeDevice, activeDevices,
     filterHours, setFilterHours, alerts, clearAlerts, isLoading,
   } = useAirMonitor();
 
   const aqiLevel = latest ? getAqiLevel(latest.aqi) : null;
   const currentDevice = devices.find((d) => d.id === selectedDevice);
 
-  // No device configured
-  if (!activeDevice) {
+  // No active devices configured
+  if (activeDevices.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <Wind className="h-16 w-16 mx-auto text-muted-foreground opacity-40" />
-          <h2 className="text-xl font-semibold">No device connected</h2>
+          <h2 className="text-xl font-semibold">No active devices</h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Add a ThingSpeak device in the Devices page to start monitoring air quality data.
+            Activate at least one ThingSpeak device in the Devices page to start monitoring air quality data.
           </p>
-          <Button onClick={() => navigate("/devices")} className="mt-4">
-            Go to Devices
-          </Button>
+          <div className="flex flex-col gap-2 items-center">
+            <Button onClick={() => navigate("/devices")} className="mt-4">
+              Go to Devices
+            </Button>
+            {activeDevice === null && (
+              <p className="text-xs text-muted-foreground">
+                {activeDevices.length === 0 ? 'No devices configured yet' : 'Devices exist but none are active'}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -97,8 +104,15 @@ const Index = () => {
                   <Activity className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{activeDevice.name}</h2>
-                  <p className="text-sm text-muted-foreground">Channel: {activeDevice.channelId}</p>
+                  <h2 className="text-xl font-bold">{activeDevice?.name || 'Device'}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Channel: {activeDevice?.channelId}
+                    {activeDevices.length > 1 && (
+                      <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        +{activeDevices.length - 1} more active
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Layers, MapPin, Trash2, Plus, ChevronRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff } from "lucide-react";
 import { useDevices } from "@/hooks/useDevices";
 import { DeviceConfig } from "@/types/device";
 
 export default function Devices() {
   const navigate = useNavigate();
-  const { devices, addDevice, removeDevice } = useDevices();
+  const { devices, addDevice, removeDevice, toggleDeviceActive } = useDevices();
   
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,6 +20,9 @@ export default function Devices() {
     apiKey: "",
     location: "",
   });
+
+  // Calculate active devices count
+  const activeDevicesCount = devices.filter(d => d.isActive).length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +38,7 @@ export default function Devices() {
       channelId: formData.channelId,
       apiKey: formData.apiKey,
       location: formData.location,
+      isActive: false, // New devices start as inactive
       createdAt: new Date().toISOString(),
     };
 
@@ -48,6 +53,15 @@ export default function Devices() {
     }
   };
 
+  /**
+   * Toggle device active state
+   * Supports multiple active devices simultaneously
+   */
+  const handleToggleActive = (id: string, currentState: boolean) => {
+    console.log(`[Devices] Toggling device ${id} from ${currentState} to ${!currentState}`);
+    toggleDeviceActive(id);
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-6xl">
       {/* Header */}
@@ -59,7 +73,7 @@ export default function Devices() {
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Devices</h1>
-              <p className="text-muted-foreground">Manage your ThingSpeak devices</p>
+              <p className="text-muted-foreground">Manage your ThingSpeak devices - Multiple devices can be active</p>
             </div>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="gap-2">
@@ -150,10 +164,10 @@ export default function Devices() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-success">{devices.length > 0 ? 1 : 0}</p>
+                <p className="text-sm text-muted-foreground">Active Devices</p>
+                <p className="text-2xl font-bold text-success">{activeDevicesCount}</p>
               </div>
-              <Layers className="h-8 w-8 text-success/50" />
+              <Power className="h-8 w-8 text-success/50" />
             </div>
           </CardContent>
         </Card>
@@ -161,10 +175,12 @@ export default function Devices() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Configured</p>
-                <p className="text-2xl font-bold">{devices.length}</p>
+                <p className="text-sm text-muted-foreground">Inactive Devices</p>
+                <p className="text-2xl font-bold text-muted-foreground">
+                  {devices.length - activeDevicesCount}
+                </p>
               </div>
-              <Layers className="h-8 w-8 text-muted-foreground/50" />
+              <PowerOff className="h-8 w-8 text-muted-foreground/50" />
             </div>
           </CardContent>
         </Card>
@@ -172,7 +188,15 @@ export default function Devices() {
 
       {/* Device List */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Your Devices</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Your Devices</h2>
+          {activeDevicesCount > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {activeDevicesCount} {activeDevicesCount === 1 ? 'device' : 'devices'} currently active
+            </p>
+          )}
+        </div>
+        
         {devices.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground py-12">
@@ -183,11 +207,11 @@ export default function Devices() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {devices.map((device, index) => (
+            {devices.map((device) => (
               <Card
                 key={device.id}
-                className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${
-                  index === 0 ? "ring-2 ring-primary" : ""
+                className={`transition-all hover:shadow-lg ${
+                  device.isActive ? "ring-2 ring-success" : ""
                 }`}
               >
                 <CardHeader>
@@ -195,8 +219,9 @@ export default function Devices() {
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2">
                         <CardTitle className="text-lg">{device.name}</CardTitle>
-                        {index === 0 && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                        {device.isActive && (
+                          <span className="flex items-center gap-1 text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">
+                            <Power className="h-3 w-3" />
                             Active
                           </span>
                         )}
@@ -233,7 +258,21 @@ export default function Devices() {
                       {new Date(device.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  {index === 0 && (
+                  
+                  {/* Toggle Active/Inactive */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {device.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <Switch
+                      checked={device.isActive}
+                      onCheckedChange={() => handleToggleActive(device.id, device.isActive)}
+                    />
+                  </div>
+
+                  {device.isActive && (
                     <Button
                       className="w-full mt-2 gap-2"
                       variant="outline"
@@ -249,6 +288,26 @@ export default function Devices() {
           </div>
         )}
       </div>
+
+      {/* Info Card */}
+      {devices.length > 0 && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Layers className="h-4 w-4 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Multi-Device Support</p>
+                <p className="text-xs text-muted-foreground">
+                  You can activate multiple devices simultaneously. Toggle the switch to activate or deactivate any device independently.
+                  Active devices will stream data to the dashboard.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

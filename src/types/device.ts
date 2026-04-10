@@ -6,5 +6,6 @@ export interface DeviceConfig {
   channelId: string;
   apiKey: string;
   location?: string;
+  isActive: boolean; // Multiple devices can be active simultaneously
   createdAt: string;
 }

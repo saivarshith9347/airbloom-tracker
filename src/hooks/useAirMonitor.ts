@@ -10,31 +10,39 @@ import {
 import { useDevices } from "./useDevices";
 
 export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?: boolean } = {}) {
-  const { devices } = useDevices();
-  const activeDevice = devices[0] ?? null;
+  const { devices, getActiveDevices } = useDevices();
+  const activeDevices = getActiveDevices();
+  
+  // For backward compatibility, use first active device as primary
+  const primaryDevice = activeDevices[0] ?? null;
   
   const [devices_legacy] = useState<DeviceInfo[]>([]);
   const [filterHours, setFilterHours] = useState(1);
   const [alerts, setAlerts] = useState<{ message: string; timestamp: string; aqi: number }[]>([]);
 
   // Debug logging
-  console.log("Active Device:", activeDevice);
+  console.log('[AirMonitor] Active devices:', activeDevices.length);
+  console.log('[AirMonitor] Primary device:', primaryDevice?.name);
 
-  // Query for latest sensor data with automatic polling
+  /**
+   * Query for latest sensor data from PRIMARY device with automatic polling
+   * In multi-device mode, this fetches data from the first active device
+   * TODO: Extend to fetch from all active devices
+   */
   const { data: latestReading, isLoading } = useQuery({
-    queryKey: ["sensorData", activeDevice?.id],
+    queryKey: ["sensorData", primaryDevice?.id],
     queryFn: async () => {
-      if (!activeDevice) {
-        console.log("No active device configured");
+      if (!primaryDevice) {
+        console.log('[AirMonitor] No active device configured');
         return null;
       }
 
       const apiData = await fetchThingSpeakData(
         1,
-        activeDevice.channelId,
-        activeDevice.apiKey
+        primaryDevice.channelId,
+        primaryDevice.apiKey
       );
-      console.log("ThingSpeak latest data:", apiData);
+      console.log('[AirMonitor] ThingSpeak latest data:', apiData);
       
       if (apiData && Array.isArray(apiData) && apiData.length > 0) {
         const latest = apiData[apiData.length - 1];
@@ -52,24 +60,28 @@ export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?
       return null;
     },
     refetchInterval: enableLivePolling ? 15_000 : false,
-    enabled: !!activeDevice,
+    enabled: !!primaryDevice,
   });
 
-  // Query for historical data based on filter hours (no polling)
+  /**
+   * Query for historical data from PRIMARY device
+   * In multi-device mode, this fetches data from the first active device
+   * TODO: Extend to fetch from all active devices
+   */
   const { data: readings = [] } = useQuery({
-    queryKey: ["sensorHistory", filterHours, activeDevice?.id],
+    queryKey: ["sensorHistory", filterHours, primaryDevice?.id],
     queryFn: async () => {
-      if (!activeDevice) {
-        console.log("No active device for history");
+      if (!primaryDevice) {
+        console.log('[AirMonitor] No active device for history');
         return [];
       }
 
       const data = await fetchThingSpeakHistory(
         filterHours,
-        activeDevice.channelId,
-        activeDevice.apiKey
+        primaryDevice.channelId,
+        primaryDevice.apiKey
       );
-      console.log("ThingSpeak history data:", data);
+      console.log('[AirMonitor] ThingSpeak history data:', data);
       
       if (data && Array.isArray(data)) {
         // Filter out invalid readings
@@ -86,7 +98,7 @@ export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?
       return [];
     },
     refetchInterval: false,
-    enabled: !!activeDevice,
+    enabled: !!primaryDevice,
   });
 
   // Alert logic - watch latest reading and push alert based on AQI bands
@@ -132,7 +144,8 @@ export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?
     readings,
     latest: latestReading ?? null,
     devices: devices_legacy,
-    activeDevice,
+    activeDevice: primaryDevice, // Primary active device (first one)
+    activeDevices, // All active devices
     selectedDevice: null,
     setSelectedDevice: () => {},
     filterHours,
