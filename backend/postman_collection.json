@@ -1,0 +1,101 @@
+{
+  "info": {
+    "name": "AirBloom Backend API",
+    "description": "Complete API collection for AirBloom Tracker backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Root",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        },
+        "description": "Get API information and available endpoints"
+      }
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/data/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "data", "health"]
+        },
+        "description": "Check if the API is running and responsive"
+      }
+    },
+    {
+      "name": "Get Latest Reading",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/data/latest",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "data", "latest"]
+        },
+        "description": "Fetch the most recent sensor reading"
+      }
+    },
+    {
+      "name": "Get History (Default)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/data/history",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "data", "history"]
+        },
+        "description": "Fetch last 20 historical readings (default)"
+      }
+    },
+    {
+      "name": "Get History (Custom Count)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/data/history?count=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "data", "history"],
+          "query": [
+            {
+              "key": "count",
+              "value": "10",
+              "description": "Number of readings to fetch (max: 100)"
+            }
+          ]
+        },
+        "description": "Fetch custom number of historical readings"
+      }
+    },
+    {
+      "name": "Get Channel Info",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/data/channel-info",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "data", "channel-info"]
+        },
+        "description": "Fetch ThingSpeak channel metadata"
+      }
+    }
+  ]
+}
