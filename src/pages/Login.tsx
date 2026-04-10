@@ -33,23 +33,31 @@ export default function Login() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    console.log('[Login] Form submitted');
     setError("");
     setIsLoading(true);
 
     try {
+      console.log('[Login] Attempting login with username:', data.username);
+      
       const success = await login(data.username, data.password);
       
       if (success) {
+        console.log('[Login] Login successful, redirecting to dashboard');
         navigate("/");
       } else {
-        setError("Invalid username or password");
+        console.log('[Login] Login failed - invalid credentials');
+        setError("Invalid username or password. Please check your credentials and try again.");
       }
     } catch (err) {
-      // Handle rate limit errors
+      console.error('[Login] Login error:', err);
+      
+      // Handle different error types
       if (err instanceof Error) {
+        // Show the actual error message (rate limit, system error, etc.)
         setError(err.message);
       } else {
-        setError("An error occurred during login");
+        setError("An unexpected error occurred during login. Please try again.");
       }
     } finally {
       setIsLoading(false);

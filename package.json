@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify-env": "node scripts/verify-env.js",
+    "generate-hash": "node scripts/generate-password-hash.js",
+    "predeploy": "npm run verify-env && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

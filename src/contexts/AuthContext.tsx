@@ -16,45 +16,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[AuthContext] Checking for existing session');
+    
     // Check for stored session
     const storedUser = localStorage.getItem("airbloom-user");
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
+        
+        // Check if session has expired
         if (parsed.expiresAt && parsed.expiresAt > Date.now()) {
           const { expiresAt: _exp, ...user } = parsed;
           setUser(user);
+          console.log('[AuthContext] Session restored from localStorage');
         } else {
+          console.log('[AuthContext] Session expired, clearing');
           localStorage.removeItem("airbloom-user");
         }
-      } catch {
+      } catch (error) {
+        console.error('[AuthContext] Failed to parse stored session:', error);
         localStorage.removeItem("airbloom-user");
       }
+    } else {
+      console.log('[AuthContext] No existing session found');
     }
+    
     setIsLoading(false);
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    console.log('[AuthContext] Login attempt started');
     
-    // Let errors (like rate limit errors) propagate to the caller
-    const userData = await authenticateUser(username, password);
+    try {
+      // Simulate API call delay (remove in production if not needed)
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      
+      // Attempt authentication
+      const userData = await authenticateUser(username, password);
 
-    if (userData) {
-      setUser(userData);
-      localStorage.setItem("airbloom-user", JSON.stringify({
-        ...userData,
-        expiresAt: Date.now() + 8 * 60 * 60 * 1000,
-      }));
-      return true;
+      if (userData) {
+        console.log('[AuthContext] Authentication successful');
+        setUser(userData);
+        
+        // Store user with expiration (8 hours)
+        const sessionData = {
+          ...userData,
+          expiresAt: Date.now() + 8 * 60 * 60 * 1000,
+        };
+        
+        localStorage.setItem("airbloom-user", JSON.stringify(sessionData));
+        console.log('[AuthContext] Session stored in localStorage');
+        
+        return true;
+      }
+      
+      console.log('[AuthContext] Authentication failed - invalid credentials');
+      return false;
+    } catch (error) {
+      console.error('[AuthContext] Login error:', error);
+      // Re-throw to let the UI handle it
+      throw error;
     }
-    return false;
   };
 
   const logout = () => {
+    console.log('[AuthContext] Logging out user');
     setUser(null);
     localStorage.removeItem("airbloom-user");
+    
+    // Clear rate limiting on logout
+    try {
+      const keys = Object.keys(sessionStorage);
+      keys.forEach(key => {
+        if (key.startsWith('airbloom-rate:')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (error) {
+      console.error('[AuthContext] Failed to clear rate limit data:', error);
+    }
   };
 
   return (
