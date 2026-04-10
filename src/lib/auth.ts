@@ -6,6 +6,17 @@ export interface User {
   username: string;
   email: string;
   name: string;
+  role: 'admin' | 'viewer';
+}
+
+// Define multiple users with their credentials
+interface UserCredential {
+  id: string;
+  username: string;
+  passwordHash: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'viewer';
 }
 
 // Rate limiting for brute-force protection
@@ -58,8 +69,61 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 /**
+ * Get all registered users with their credentials
+ * Supports multiple users from environment variables
+ */
+function getRegisteredUsers(): UserCredential[] {
+  const envConfig = getEnvConfig();
+  
+  if (!envConfig) {
+    return [];
+  }
+
+  const users: UserCredential[] = [];
+
+  // Primary admin user from environment variables
+  if (envConfig.adminUsername && envConfig.adminPasswordHash) {
+    users.push({
+      id: "1",
+      username: envConfig.adminUsername,
+      passwordHash: envConfig.adminPasswordHash,
+      email: `${envConfig.adminUsername}@mlrit.ac.in`,
+      name: "Admin User",
+      role: "admin"
+    });
+  }
+
+  // Additional users from environment variables
+  // VITE_USER2_USERNAME, VITE_USER2_PASSWORD_HASH, VITE_USER2_NAME, VITE_USER2_ROLE
+  if (envConfig.user2Username && envConfig.user2PasswordHash) {
+    users.push({
+      id: "2",
+      username: envConfig.user2Username,
+      passwordHash: envConfig.user2PasswordHash,
+      email: envConfig.user2Email || `${envConfig.user2Username}@airbloom.io`,
+      name: envConfig.user2Name || "Viewer User",
+      role: (envConfig.user2Role as 'admin' | 'viewer') || "viewer"
+    });
+  }
+
+  // User 3
+  if (envConfig.user3Username && envConfig.user3PasswordHash) {
+    users.push({
+      id: "3",
+      username: envConfig.user3Username,
+      passwordHash: envConfig.user3PasswordHash,
+      email: envConfig.user3Email || `${envConfig.user3Username}@airbloom.io`,
+      name: envConfig.user3Name || "User 3",
+      role: (envConfig.user3Role as 'admin' | 'viewer') || "viewer"
+    });
+  }
+
+  return users;
+}
+
+/**
  * Authenticate a user with username and password
- * Production-ready with comprehensive error handling and logging
+ * Supports multiple users with different roles
  * 
  * @param username - Username or email to authenticate
  * @param password - Plain text password
@@ -86,43 +150,44 @@ export async function authenticateUser(username: string, password: string): Prom
     throw new Error(`Too many failed attempts. Try again in ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}.`);
   }
 
-  // Get credentials from environment configuration
-  console.log('[AUTH] Loading environment configuration...');
-  const envConfig = getEnvConfig();
+  // Get all registered users
+  console.log('[AUTH] Loading registered users...');
+  const registeredUsers = getRegisteredUsers();
   
-  if (!envConfig) {
-    console.error('[AUTH] ❌ Environment configuration failed to load');
+  if (registeredUsers.length === 0) {
+    console.error('[AUTH] ❌ No users configured');
     console.error('[AUTH] This usually means environment variables are not set in Vercel');
     console.error('[AUTH] Go to: Vercel Project Settings > Environment Variables');
     console.error('[AUTH] Add: VITE_ADMIN_USERNAME and VITE_ADMIN_PASSWORD_HASH');
     throw new Error('Authentication system not configured. Please contact administrator.');
   }
 
-  const adminUsername = envConfig.adminUsername;
-  const adminPasswordHash = envConfig.adminPasswordHash;
+  console.log('[AUTH] ✓ Found', registeredUsers.length, 'registered user(s)');
 
-  console.log('[AUTH] ✓ Environment configuration loaded');
-  console.log('[AUTH] Expected username:', adminUsername);
-  console.log('[AUTH] Expected hash length:', adminPasswordHash?.length);
+  // Normalize username (remove email domain if present)
+  const normalizedUsername = username.split('@')[0];
 
-  // Check if username matches (allow multiple email formats)
-  const usernameMatches = 
-    username === adminUsername || 
-    username === `${adminUsername}@airbloom.io` ||
-    username === `${adminUsername}@mlrit.ac.in`;
-  
-  if (!usernameMatches) {
-    console.warn('[AUTH] ❌ Username does not match');
+  // Find matching user
+  const matchedUser = registeredUsers.find(user => {
+    const userMatches = 
+      username === user.username ||
+      normalizedUsername === user.username ||
+      username === user.email ||
+      username === `${user.username}@airbloom.io` ||
+      username === `${user.username}@mlrit.ac.in`;
+    return userMatches;
+  });
+
+  if (!matchedUser) {
+    console.warn('[AUTH] ❌ Username not found');
     console.warn('[AUTH] Provided:', username);
-    console.warn('[AUTH] Expected one of:');
-    console.warn('[AUTH]   -', adminUsername);
-    console.warn('[AUTH]   -', `${adminUsername}@airbloom.io`);
-    console.warn('[AUTH]   -', `${adminUsername}@mlrit.ac.in`);
+    console.warn('[AUTH] Available users:', registeredUsers.map(u => u.username).join(', '));
     recordFailedAttempt(username);
     return null;
   }
 
-  console.log('[AUTH] ✓ Username matched');
+  console.log('[AUTH] ✓ User found:', matchedUser.username);
+  console.log('[AUTH] ✓ User role:', matchedUser.role);
   console.log('[AUTH] Hashing provided password...');
 
   // Hash the provided password and compare
@@ -131,26 +196,28 @@ export async function authenticateUser(username: string, password: string): Prom
     passwordHash = await hashPassword(password);
     console.log('[AUTH] ✓ Password hashed successfully');
     console.log('[AUTH] Generated hash:', passwordHash);
-    console.log('[AUTH] Expected hash:', adminPasswordHash);
+    console.log('[AUTH] Expected hash:', matchedUser.passwordHash);
   } catch (error) {
     console.error('[AUTH] ❌ Password hashing failed:', error);
     throw new Error('Authentication system error');
   }
   
   // Compare password hashes
-  if (passwordHash === adminPasswordHash) {
+  if (passwordHash === matchedUser.passwordHash) {
     console.log('[AUTH] ==========================================');
     console.log('[AUTH] ✓✓✓ AUTHENTICATION SUCCESSFUL ✓✓✓');
-    console.log('[AUTH] User:', username);
+    console.log('[AUTH] User:', matchedUser.username);
+    console.log('[AUTH] Role:', matchedUser.role);
     console.log('[AUTH] ==========================================');
     
     // Successful login - clear attempts
     saveAttemptRecord(username, { attempts: 0, lockedUntil: 0 });
     return {
-      id: "1",
-      username: adminUsername,
-      email: `${adminUsername}@mlrit.ac.in`,
-      name: "Admin User"
+      id: matchedUser.id,
+      username: matchedUser.username,
+      email: matchedUser.email,
+      name: matchedUser.name,
+      role: matchedUser.role
     };
   }
 
