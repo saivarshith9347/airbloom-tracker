@@ -5,13 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff } from "lucide-react";
+import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff, Eye, Lock } from "lucide-react";
 import { useDevices } from "@/hooks/useDevices";
 import { DeviceConfig } from "@/types/device";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 export default function Devices() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { devices, addDevice, removeDevice, toggleDeviceActive } = useDevices();
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+  const isViewer = user?.role === 'viewer';
   
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,8 +34,18 @@ export default function Devices() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error("Permission denied", {
+        description: "Only administrators can add devices"
+      });
+      return;
+    }
+    
     if (!formData.name || !formData.channelId || !formData.apiKey) {
-      alert("Please fill in all required fields");
+      toast.error("Missing required fields", {
+        description: "Please fill in all required fields"
+      });
       return;
     }
 
@@ -45,11 +62,25 @@ export default function Devices() {
     addDevice(newDevice);
     setFormData({ name: "", channelId: "", apiKey: "", location: "" });
     setShowForm(false);
+    toast.success("Device added successfully", {
+      description: `${formData.name} has been added to your devices`
+    });
   };
 
   const handleDelete = (id: string) => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error("Permission denied", {
+        description: "Only administrators can remove devices"
+      });
+      return;
+    }
+    
     if (confirm("Are you sure you want to remove this device?")) {
       removeDevice(id);
+      toast.success("Device removed", {
+        description: "The device has been removed successfully"
+      });
     }
   };
 
@@ -58,8 +89,25 @@ export default function Devices() {
    * Supports multiple active devices simultaneously
    */
   const handleToggleActive = (id: string, currentState: boolean) => {
+    // Viewers can toggle devices on/off to view data
+    // But cannot add or remove devices
     console.log(`[Devices] Toggling device ${id} from ${currentState} to ${!currentState}`);
     toggleDeviceActive(id);
+    
+    const action = !currentState ? "activated" : "deactivated";
+    toast.success(`Device ${action}`, {
+      description: `The device has been ${action} successfully`
+    });
+  };
+
+  const handleAddDeviceClick = () => {
+    if (!isAdmin) {
+      toast.error("Permission denied", {
+        description: "Only administrators can add devices. You have read-only access."
+      });
+      return;
+    }
+    setShowForm(!showForm);
   };
 
   return (
@@ -73,14 +121,39 @@ export default function Devices() {
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Devices</h1>
-              <p className="text-muted-foreground">Manage your ThingSpeak devices - Multiple devices can be active</p>
+              <p className="text-muted-foreground">
+                {isViewer ? "View all devices - Read-only access" : "Manage your ThingSpeak devices - Multiple devices can be active"}
+              </p>
             </div>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="gap-2">
+          <Button 
+            onClick={handleAddDeviceClick} 
+            className="gap-2"
+            disabled={isViewer}
+          >
             <Plus className="h-4 w-4" />
             Add Device
           </Button>
         </div>
+        
+        {/* Role indicator */}
+        {isViewer && (
+          <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-3">
+                <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Viewer Mode - Read-Only Access
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    You can view all devices and toggle them on/off to see data, but cannot add or remove devices.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Add Device Form */}
@@ -238,8 +311,10 @@ export default function Devices() {
                       size="sm"
                       onClick={() => handleDelete(device.id)}
                       className="text-destructive hover:text-destructive"
+                      disabled={isViewer}
+                      title={isViewer ? "Only admins can delete devices" : "Delete device"}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {isViewer ? <Lock className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                     </Button>
                   </div>
                 </CardHeader>
@@ -298,10 +373,14 @@ export default function Devices() {
                 <Layers className="h-4 w-4 text-primary" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium">Multi-Device Support</p>
+                <p className="text-sm font-medium">
+                  {isViewer ? "Shared Device Access" : "Multi-Device Support"}
+                </p>
                 <p className="text-xs text-muted-foreground">
-                  You can activate multiple devices simultaneously. Toggle the switch to activate or deactivate any device independently.
-                  Active devices will stream data to the dashboard.
+                  {isViewer 
+                    ? "You can view all devices added by administrators. Toggle devices on/off to view their data on the dashboard. You cannot add or remove devices."
+                    : "You can activate multiple devices simultaneously. Toggle the switch to activate or deactivate any device independently. Active devices will stream data to the dashboard."
+                  }
                 </p>
               </div>
             </div>

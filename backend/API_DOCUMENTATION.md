@@ -160,7 +160,7 @@ curl http://localhost:5000/api/data/latest
 
 **Example JavaScript:**
 ```javascript
-fetch('http://localhost:5000/api/data/latest')
+fetch('http://localhost:5001/api/data/latest')
   .then(res => res.json())
   .then(data => console.log(data));
 ```
@@ -404,7 +404,7 @@ curl http://localhost:5000/api/data/channel-info
 ### Using JavaScript Fetch
 ```javascript
 // Latest reading
-fetch('http://localhost:5000/api/data/latest')
+fetch('http://localhost:5001/api/data/latest')
   .then(res => res.json())
   .then(data => {
     if (data.success) {
@@ -414,7 +414,7 @@ fetch('http://localhost:5000/api/data/latest')
   });
 
 // History
-fetch('http://localhost:5000/api/data/history?count=10')
+fetch('http://localhost:5001/api/data/history?count=10')
   .then(res => res.json())
   .then(data => {
     if (data.success) {
@@ -473,7 +473,7 @@ function Dashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('http://localhost:5000/api/data/latest');
+        const response = await fetch('http://localhost:5001/api/data/latest');
         const data = await response.json();
         
         if (data.success) {
