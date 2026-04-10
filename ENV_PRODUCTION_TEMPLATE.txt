@@ -1,0 +1,50 @@
+# ============================================
+# PRODUCTION ENVIRONMENT VARIABLES TEMPLATE
+# ============================================
+# 
+# Copy these to Vercel Dashboard:
+# Project Settings → Environment Variables
+# 
+# Select: Production, Preview, Development
+# ============================================
+
+# REQUIRED - Authentication
+VITE_ADMIN_USERNAME=24r21a0489
+VITE_ADMIN_PASSWORD_HASH=557d05015431d58b28589b76ab0802877aad0e3cb3020be41d21b116e45d620a
+
+# OPTIONAL - Map Configuration
+VITE_HOME_LATITUDE=28.6139
+VITE_HOME_LONGITUDE=77.209
+VITE_HOME_NAME=Home Base
+
+# OPTIONAL - Legacy ThingSpeak (can be empty)
+VITE_THINGSPEAK_CHANNEL_ID=
+VITE_THINGSPEAK_API_KEY=
+
+# ============================================
+# BACKEND ENVIRONMENT VARIABLES
+# (Deploy backend separately - Railway/Render)
+# ============================================
+
+# REQUIRED - ThingSpeak API
+THINGSPEAK_CHANNEL_ID=3303384
+THINGSPEAK_READ_API_KEY=IOQIVSWTYLHAYRU1
+
+# REQUIRED - CORS
+FRONTEND_URL=https://airbloom-tracker.vercel.app
+
+# OPTIONAL - Server Config
+PORT=5001
+NODE_ENV=production
+
+# ============================================
+# NOTES
+# ============================================
+# 
+# 1. Frontend variables MUST start with VITE_
+# 2. Backend variables do NOT have VITE_ prefix
+# 3. No quotes around values in Vercel
+# 4. No spaces around = sign
+# 5. Redeploy after adding/changing variables
+# 
+# ============================================
