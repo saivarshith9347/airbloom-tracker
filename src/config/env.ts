@@ -39,7 +39,6 @@ function getEnv(key: string, required: boolean = false): string | undefined {
   }
   
   if (value && value !== '' && value !== 'undefined') {
-    console.log(`[ENV] ✓ ${key} loaded`);
     return value as string;
   }
   
@@ -50,9 +49,6 @@ function getEnv(key: string, required: boolean = false): string | undefined {
  * Load and validate environment configuration
  */
 export function loadEnvConfig(): EnvConfig | null {
-  console.log('[ENV] Loading environment configuration...');
-  console.log('[ENV] Available env vars:', Object.keys(import.meta.env));
-  
   const adminUsername = getEnv('VITE_ADMIN_USERNAME', true);
   const adminPasswordHash = getEnv('VITE_ADMIN_PASSWORD_HASH', true);
   
@@ -62,8 +58,6 @@ export function loadEnvConfig(): EnvConfig | null {
     console.error('[ENV] Please add them in Vercel Project Settings and redeploy');
     return null;
   }
-  
-  console.log('[ENV] ✓ All required variables loaded');
   
   return {
     adminUsername,

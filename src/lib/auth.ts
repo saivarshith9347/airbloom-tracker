@@ -131,14 +131,8 @@ function getRegisteredUsers(): UserCredential[] {
  * @throws Error if rate limited or system error occurs
  */
 export async function authenticateUser(username: string, password: string): Promise<User | null> {
-  console.log('[AUTH] ==========================================');
-  console.log('[AUTH] Authentication attempt started');
-  console.log('[AUTH] Username provided:', username);
-  console.log('[AUTH] ==========================================');
-  
   // Input validation
   if (!username || !password) {
-    console.error('[AUTH] ❌ Missing username or password');
     throw new Error('Username and password are required');
   }
 
@@ -146,23 +140,18 @@ export async function authenticateUser(username: string, password: string): Prom
   const attemptRecord = getAttemptRecord(username);
   if (attemptRecord && attemptRecord.lockedUntil > Date.now()) {
     const minutesRemaining = Math.ceil((attemptRecord.lockedUntil - Date.now()) / (60 * 1000));
-    console.warn('[AUTH] ⚠️ Rate limit exceeded for:', username);
     throw new Error(`Too many failed attempts. Try again in ${minutesRemaining} minute${minutesRemaining > 1 ? 's' : ''}.`);
   }
 
   // Get all registered users
-  console.log('[AUTH] Loading registered users...');
   const registeredUsers = getRegisteredUsers();
   
   if (registeredUsers.length === 0) {
     console.error('[AUTH] ❌ No users configured');
     console.error('[AUTH] This usually means environment variables are not set in Vercel');
-    console.error('[AUTH] Go to: Vercel Project Settings > Environment Variables');
     console.error('[AUTH] Add: VITE_ADMIN_USERNAME and VITE_ADMIN_PASSWORD_HASH');
     throw new Error('Authentication system not configured. Please contact administrator.');
   }
-
-  console.log('[AUTH] ✓ Found', registeredUsers.length, 'registered user(s)');
 
   // Normalize username (remove email domain if present)
   const normalizedUsername = username.split('@')[0];
@@ -179,37 +168,21 @@ export async function authenticateUser(username: string, password: string): Prom
   });
 
   if (!matchedUser) {
-    console.warn('[AUTH] ❌ Username not found');
-    console.warn('[AUTH] Provided:', username);
-    console.warn('[AUTH] Available users:', registeredUsers.map(u => u.username).join(', '));
     recordFailedAttempt(username);
     return null;
   }
-
-  console.log('[AUTH] ✓ User found:', matchedUser.username);
-  console.log('[AUTH] ✓ User role:', matchedUser.role);
-  console.log('[AUTH] Hashing provided password...');
 
   // Hash the provided password and compare
   let passwordHash: string;
   try {
     passwordHash = await hashPassword(password);
-    console.log('[AUTH] ✓ Password hashed successfully');
-    console.log('[AUTH] Generated hash:', passwordHash);
-    console.log('[AUTH] Expected hash:', matchedUser.passwordHash);
   } catch (error) {
-    console.error('[AUTH] ❌ Password hashing failed:', error);
+    console.error('Password hashing failed:', error);
     throw new Error('Authentication system error');
   }
   
   // Compare password hashes
   if (passwordHash === matchedUser.passwordHash) {
-    console.log('[AUTH] ==========================================');
-    console.log('[AUTH] ✓✓✓ AUTHENTICATION SUCCESSFUL ✓✓✓');
-    console.log('[AUTH] User:', matchedUser.username);
-    console.log('[AUTH] Role:', matchedUser.role);
-    console.log('[AUTH] ==========================================');
-    
     // Successful login - clear attempts
     saveAttemptRecord(username, { attempts: 0, lockedUntil: 0 });
     return {
@@ -222,11 +195,6 @@ export async function authenticateUser(username: string, password: string): Prom
   }
 
   // Password mismatch
-  console.error('[AUTH] ==========================================');
-  console.error('[AUTH] ❌ PASSWORD MISMATCH');
-  console.error('[AUTH] This means the password is incorrect');
-  console.error('[AUTH] Or the hash in environment variables is wrong');
-  console.error('[AUTH] ==========================================');
   recordFailedAttempt(username);
   return null;
 }
