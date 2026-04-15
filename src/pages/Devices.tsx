@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff, Eye, Lock } from "lucide-react";
-import { useDevices } from "@/hooks/useDevices";
+import { useSupabaseDevices } from "@/hooks/useSupabaseDevices";
 import { DeviceConfig } from "@/types/device";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 export default function Devices() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { devices, addDevice, removeDevice, toggleDeviceActive } = useDevices();
+  const { devices, isLoading, addDevice, removeDevice, toggleDeviceActive } = useSupabaseDevices();
   
   // Check if user is admin
   const isAdmin = user?.role === 'admin';

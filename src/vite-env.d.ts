@@ -19,6 +19,9 @@ interface ImportMetaEnv {
   readonly VITE_USER3_EMAIL: string;
   readonly VITE_USER3_NAME: string;
   readonly VITE_USER3_ROLE: string;
+  // Supabase
+  readonly VITE_SUPABASE_URL: string;
+  readonly VITE_SUPABASE_ANON_KEY: string;
 }
 
 interface ImportMeta {
