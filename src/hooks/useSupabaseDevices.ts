@@ -3,8 +3,8 @@
  * Real-time device management with Supabase
  */
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState, useEffect, useRef } from "react";
+import { supabase, DeviceRow } from "@/lib/supabase";
 import { DeviceConfig } from "@/types/device";
 import { toast } from "sonner";
 
@@ -28,7 +28,7 @@ export function useSupabaseDevices() {
       }
 
       // Convert snake_case to camelCase
-      const formattedDevices: DeviceConfig[] = (data || []).map((device: any) => ({
+      const formattedDevices: DeviceConfig[] = (data || []).map((device: DeviceRow) => ({
         id: device.id,
         name: device.name,
         channelId: device.channel_id,
@@ -40,9 +40,9 @@ export function useSupabaseDevices() {
 
       setDevices(formattedDevices);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Supabase] Error:', err);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +63,31 @@ export function useSupabaseDevices() {
           table: 'devices'
         },
         (payload) => {
-          console.log('[Supabase] Real-time update:', payload);
-          fetchDevices(); // Refetch all devices on any change
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const newDevice = payload.new as DeviceRow;
+            setDevices(prev => [{
+              id: newDevice.id,
+              name: newDevice.name,
+              channelId: newDevice.channel_id,
+              apiKey: newDevice.api_key,
+              location: newDevice.location || '',
+              isActive: newDevice.is_active,
+              createdAt: newDevice.created_at,
+            }, ...prev]);
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            const updated = payload.new as DeviceRow;
+            setDevices(prev => prev.map(d => d.id === updated.id ? {
+              id: updated.id,
+              name: updated.name,
+              channelId: updated.channel_id,
+              apiKey: updated.api_key,
+              location: updated.location || '',
+              isActive: updated.is_active,
+              createdAt: updated.created_at,
+            } : d));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            setDevices(prev => prev.filter(d => d.id !== (payload.old as DeviceRow).id));
+          }
         }
       )
       .subscribe();
@@ -75,36 +98,39 @@ export function useSupabaseDevices() {
     };
   }, []);
 
-  // Migrate from localStorage on first load
+  // Migrate from localStorage on first load (run once after initial fetch completes)
+  const hasMigratedRef = useRef(false);
   useEffect(() => {
-    const migrateFromLocalStorage = async () => {
-      const localDevices = localStorage.getItem('airbloom-devices');
-      if (localDevices && devices.length === 0) {
-        try {
-          const parsedDevices = JSON.parse(localDevices);
-          if (Array.isArray(parsedDevices) && parsedDevices.length > 0) {
-            console.log('[Migration] Found', parsedDevices.length, 'devices in localStorage');
-            
-            // Insert each device
-            for (const device of parsedDevices) {
-              await addDevice(device);
-            }
-            
-            // Clear localStorage after successful migration
-            localStorage.removeItem('airbloom-devices');
-            console.log('[Migration] Devices migrated to Supabase');
-            toast.success('Devices migrated to cloud storage');
-          }
-        } catch (error) {
-          console.error('[Migration] Failed:', error);
-        }
-      }
-    };
+    if (isLoading || hasMigratedRef.current) return;
+    hasMigratedRef.current = true;
 
-    if (!isLoading) {
-      migrateFromLocalStorage();
+    const localDevices = localStorage.getItem('airbloom-devices');
+    if (!localDevices) return;
+
+    try {
+      const parsedDevices: DeviceConfig[] = JSON.parse(localDevices);
+      if (!Array.isArray(parsedDevices) || parsedDevices.length === 0) return;
+
+      // Only migrate devices that don't already exist in Supabase (by id)
+      const existingIds = new Set(devices.map(d => d.id));
+      const toMigrate = parsedDevices.filter(d => !existingIds.has(d.id));
+
+      if (toMigrate.length === 0) {
+        localStorage.removeItem('airbloom-devices');
+        return;
+      }
+
+      console.log('[Migration] Migrating', toMigrate.length, 'device(s) to Supabase');
+      Promise.all(toMigrate.map(device => addDevice(device)))
+        .then(() => {
+          localStorage.removeItem('airbloom-devices');
+          toast.success(`Migrated ${toMigrate.length} device(s) to cloud storage`);
+        })
+        .catch(err => console.error('[Migration] Failed:', err));
+    } catch (error) {
+      console.error('[Migration] Parse error:', error);
     }
-  }, [isLoading]);
+  }, [isLoading, devices]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add device
   const addDevice = async (device: DeviceConfig) => {
@@ -135,10 +161,10 @@ export function useSupabaseDevices() {
 
       console.log('[Supabase] Device added:', data);
       // Real-time subscription will update the list automatically
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Supabase] Error:', err);
       toast.error('Failed to add device', {
-        description: err.message
+        description: err instanceof Error ? err.message : 'Unknown error'
       });
     }
   };
@@ -161,10 +187,10 @@ export function useSupabaseDevices() {
 
       console.log('[Supabase] Device removed:', id);
       // Real-time subscription will update the list automatically
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Supabase] Error:', err);
       toast.error('Failed to remove device', {
-        description: err.message
+        description: err instanceof Error ? err.message : 'Unknown error'
       });
     }
   };
@@ -191,10 +217,10 @@ export function useSupabaseDevices() {
 
       console.log('[Supabase] Device toggled:', id);
       // Real-time subscription will update the list automatically
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Supabase] Error:', err);
       toast.error('Failed to toggle device', {
-        description: err.message
+        description: err instanceof Error ? err.message : 'Unknown error'
       });
     }
   };
@@ -223,10 +249,10 @@ export function useSupabaseDevices() {
 
       console.log('[Supabase] Device updated:', device.id);
       // Real-time subscription will update the list automatically
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[Supabase] Error:', err);
       toast.error('Failed to update device', {
-        description: err.message
+        description: err instanceof Error ? err.message : 'Unknown error'
       });
     }
   };

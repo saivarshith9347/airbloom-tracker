@@ -9,16 +9,6 @@ export interface SensorReading {
   longitude: number;
 }
 
-export interface DeviceInfo {
-  id: string;
-  name: string;
-  online: boolean;
-  lastUpdated: string;
-  location: string;
-  lastAqi: number;
-  status: string;
-}
-
 interface ThingSpeakFeed {
   created_at: string;
   field1: string;

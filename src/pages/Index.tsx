@@ -15,12 +15,11 @@ import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
   const {
-    readings, latest, devices, selectedDevice, activeDevice, activeDevices,
+    readings, latest, activeDevice, activeDevices,
     filterHours, setFilterHours, alerts, clearAlerts, isLoading,
   } = useAirMonitor();
 
   const aqiLevel = latest ? getAqiLevel(latest.aqi) : null;
-  const currentDevice = devices.find((d) => d.id === selectedDevice);
 
   // No active devices configured
   if (activeDevices.length === 0) {
@@ -47,6 +46,7 @@ const Index = () => {
     );
   }
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
@@ -62,7 +62,8 @@ const Index = () => {
     );
   }
 
-  if (latest === null && !isLoading) {
+  // No sensor data received
+  if (!latest) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3">
@@ -70,23 +71,8 @@ const Index = () => {
           <h2 className="text-lg font-semibold">No sensor data</h2>
           <p className="text-sm text-muted-foreground">No data received from ThingSpeak. Check your API configuration.</p>
           <p className="text-xs text-muted-foreground mt-2">
-            Ensure VITE_THINGSPEAK_CHANNEL_ID and VITE_THINGSPEAK_API_KEY are set in .env
+            Device: {activeDevice?.name} (Channel: {activeDevice?.channelId})
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!latest) {
-    return (
-      <div className="min-h-screen bg-background p-4 md:p-6 lg:p-8">
-        <div className="max-w-7xl mx-auto space-y-5">
-          <Skeleton className="h-16 w-full" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
         </div>
       </div>
     );
@@ -192,11 +178,15 @@ const Index = () => {
         <EnhancedMap
           readings={readings}
           latest={latest}
-          homeLocation={{
-            lat: parseFloat(import.meta.env.VITE_HOME_LATITUDE) || 28.6139,
-            lng: parseFloat(import.meta.env.VITE_HOME_LONGITUDE) || 77.209,
-            name: import.meta.env.VITE_HOME_NAME || "Home Base"
-          }}
+          homeLocation={(() => {
+            const lat = parseFloat(import.meta.env.VITE_HOME_LATITUDE ?? '');
+            const lng = parseFloat(import.meta.env.VITE_HOME_LONGITUDE ?? '');
+            return {
+              lat: isNaN(lat) ? 28.6139 : lat,
+              lng: isNaN(lng) ? 77.209 : lng,
+              name: import.meta.env.VITE_HOME_NAME || "Home Base",
+            };
+          })()}
         />
       </div>
     </div>

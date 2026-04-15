@@ -30,7 +30,7 @@ interface EnvConfig {
  * Get environment variable safely
  */
 function getEnv(key: string, required: boolean = false): string | undefined {
-  const value = import.meta.env[key];
+  const value = (import.meta.env as Record<string, string | undefined>)[key];
   
   if (required && (!value || value === '' || value === 'undefined')) {
     console.error(`[ENV] Required environment variable ${key} is missing!`);

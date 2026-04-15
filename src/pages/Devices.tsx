@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff, Eye, Lock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Layers, MapPin, Trash2, Plus, ChevronRight, Power, PowerOff, Eye, Lock, XCircle } from "lucide-react";
 import { useSupabaseDevices } from "@/hooks/useSupabaseDevices";
 import { DeviceConfig } from "@/types/device";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +15,7 @@ import { toast } from "sonner";
 export default function Devices() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { devices, isLoading, addDevice, removeDevice, toggleDeviceActive } = useSupabaseDevices();
+  const { devices, isLoading, error, addDevice, removeDevice, toggleDeviceActive } = useSupabaseDevices();
   
   // Check if user is admin
   const isAdmin = user?.role === 'admin';
@@ -258,6 +259,26 @@ export default function Devices() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-4 pb-4 flex items-center gap-3">
+            <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-destructive">Database connection error</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading Skeleton */}
+      {isLoading && devices.length === 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2].map(i => <Skeleton key={i} className="h-48 w-full rounded-lg" />)}
+        </div>
+      )}
 
       {/* Device List */}
       <div className="space-y-3">

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { SensorReading, getAqiLevel, exportReadingsToCsv } from "@/lib/thingspeak";
+import { SensorReading, getAqiLevel, exportReadingsToCsv, AqiColor } from "@/lib/thingspeak";
 import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
 
@@ -8,10 +8,11 @@ interface HistoryTableProps {
   pageSize?: number;
 }
 
-const colorMap = {
+const colorMap: Record<AqiColor, string> = {
   success: "text-success",
   warning: "text-warning",
   danger: "text-danger",
+  default: "text-foreground",
 };
 
 export function HistoryTable({ data, pageSize: propsPageSize }: HistoryTableProps) {

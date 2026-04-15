@@ -7,6 +7,53 @@ A premium, production-ready IoT dashboard for portable air quality monitoring an
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## 📚 Documentation
+
+### Getting Started
+- [Quick Start Guide](docs/QUICK_START.md)
+- [Features Overview](docs/FEATURES.md)
+
+### Deployment & Setup
+- [Deployment Guide](docs/DEPLOYMENT_GUIDE.md)
+- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
+- [Vercel Setup](docs/VERCEL_SETUP.md)
+- [Vercel Deployment Checklist](docs/VERCEL_DEPLOYMENT_CHECKLIST.md)
+- [Vercel Deployment Status](docs/VERCEL_DEPLOYMENT_STATUS.md)
+- [Deployment Status](docs/DEPLOYMENT_STATUS.md)
+- [Deployment Summary](docs/DEPLOYMENT_SUMMARY.md)
+- [README Deployment](docs/README_DEPLOYMENT.md)
+
+### Authentication & Security
+- [Auth Setup](docs/AUTH_README.md)
+- [Role-Based Access Guide](docs/ROLE_BASED_ACCESS_GUIDE.md)
+- [Supabase Setup Guide](docs/SUPABASE_SETUP_GUIDE.md)
+- [Supabase Troubleshooting](docs/SUPABASE_TROUBLESHOOTING.md)
+
+### Multi-Device & Multi-User
+- [Multi-Device Guide](docs/MULTI_DEVICE_GUIDE.md)
+- [Multi-User Guide](docs/MULTI_USER_GUIDE.md)
+- [Shared Device Storage Guide](docs/SHARED_DEVICE_STORAGE_GUIDE.md)
+
+### Troubleshooting & Fixes
+- [Debug API Key](docs/DEBUG_API_KEY.md)
+- [Quick Fix Guide](docs/QUICK_FIX_GUIDE.md)
+- [Quick Fix Now](docs/QUICK_FIX_NOW.md)
+- [Production Fix Summary](docs/PRODUCTION_FIX_SUMMARY.md)
+- [Final Solution](docs/FINAL_SOLUTION.md)
+- [Solution RLS Issue](docs/SOLUTION_RLS_ISSUE.md)
+- [Urgent Fix](docs/URGENT_FIX.md)
+- [Immediate Action Required](docs/IMMEDIATE_ACTION_REQUIRED.md)
+
+### Reference & Analysis
+- [Changelog](docs/CHANGELOG.md)
+- [Upgrade Guide](docs/UPGRADE_GUIDE.md)
+- [Environment Analysis](docs/ENVIRONMENT_ANALYSIS.md)
+- [Complete Analysis Summary](docs/COMPLETE_ANALYSIS_SUMMARY.md)
+- [Summary](docs/SUMMARY.md)
+- [Visual Guide](docs/VISUAL_GUIDE.md)
+- [Index](docs/INDEX.md)
+- [Next Steps](docs/NEXT_STEPS.md)
+
 ## ✨ Features
 
 ### 🎨 Modern UI/UX
@@ -278,7 +325,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📞 Support
 
-For detailed upgrade information, see [UPGRADE_GUIDE.md](./UPGRADE_GUIDE.md)
+For detailed upgrade information, see [UPGRADE_GUIDE.md](docs/UPGRADE_GUIDE.md)
 
 ## 🎉 Acknowledgments
 

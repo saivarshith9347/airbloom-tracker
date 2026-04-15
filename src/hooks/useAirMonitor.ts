@@ -2,21 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   SensorReading,
-  DeviceInfo,
   fetchThingSpeakData,
   fetchThingSpeakHistory,
   getAqiLevel,
 } from "@/lib/thingspeak";
-import { useDevices } from "./useDevices";
+import { useSupabaseDevices } from "./useSupabaseDevices";
 
 export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?: boolean } = {}) {
-  const { devices, getActiveDevices } = useDevices();
+  const { devices, getActiveDevices, isLoading: devicesLoading } = useSupabaseDevices();
   const activeDevices = getActiveDevices();
   
   // For backward compatibility, use first active device as primary
   const primaryDevice = activeDevices[0] ?? null;
   
-  const [devices_legacy] = useState<DeviceInfo[]>([]);
   const [filterHours, setFilterHours] = useState(1);
   const [alerts, setAlerts] = useState<{ message: string; timestamp: string; aqi: number }[]>([]);
 
@@ -143,15 +141,12 @@ export function useAirMonitor({ enableLivePolling = true }: { enableLivePolling?
   return {
     readings,
     latest: latestReading ?? null,
-    devices: devices_legacy,
     activeDevice: primaryDevice, // Primary active device (first one)
     activeDevices, // All active devices
-    selectedDevice: null,
-    setSelectedDevice: () => {},
     filterHours,
     setFilterHours,
     alerts,
     clearAlerts: () => setAlerts([]),
-    isLoading,
+    isLoading: isLoading || devicesLoading,
   };
 }

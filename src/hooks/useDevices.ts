@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use useSupabaseDevices instead.
+ * This hook stores devices in localStorage and is kept only as a fallback
+ * for offline scenarios. The primary data source is Supabase via useSupabaseDevices.
+ */
+
 import { useState, useEffect } from "react";
 import { DeviceConfig } from "@/types/device";
 
