@@ -10,6 +10,7 @@ import { useSupabaseDevices } from "@/hooks/useSupabaseDevices";
 import { DeviceConfig } from "@/types/device";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { SupabaseDiagnostic } from "@/components/SupabaseDiagnostic";
 
 export default function Devices() {
   const navigate = useNavigate();
@@ -112,6 +113,9 @@ export default function Devices() {
 
   return (
     <div className="container mx-auto p-6 space-y-6 max-w-6xl">
+      {/* Diagnostic Component - Remove after debugging */}
+      <SupabaseDiagnostic />
+      
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
